@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -25,12 +26,27 @@ func getUserAge(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(http.StatusBadRequest)
+	http.Error(w, "No such user", http.StatusBadRequest)
+}
+
+func updateUser(w http.ResponseWriter, r *http.Request) {
+	var u User
+	err := json.NewDecoder(r.Body).Decode(&u)
+	if err != nil {
+		http.Error(w, "Invalid Json", http.StatusBadRequest)
+		fmt.Println(err.Error())
+		return
+	}
+
+	users = append(users, u)
+
+	fmt.Println("Users updated: ")
+	fmt.Println(users)
 }
 
 func HandleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/users/{name}", getUserAge).Methods(http.MethodGet)
-
+	router.HandleFunc("/users", updateUser).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
