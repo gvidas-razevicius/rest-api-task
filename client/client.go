@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -13,6 +13,13 @@ import (
 	server "github.com/gvidas-razevicius/rest-api-task/server"
 	cobra "github.com/spf13/cobra"
 )
+
+// TODO: generate mocks for MakeRequest to test other functions
+//
+//go:generate go run github.com/golang/mock/mockgen -destination mocks/requester.go github.com/gvidas-razevicius/rest-api-task Requester
+type Requester interface {
+	MakeRequest(method string, endpoint string, values url.Values, json []byte) (*http.Response, error)
+}
 
 const (
 	APIroot  = "http://localhost:8080"
@@ -126,7 +133,7 @@ func CreateUser(cmd *cobra.Command, args []string) {
 	}
 }
 
-func main() {
+func Execute() {
 	rootCmd.AddCommand(getAgeCmd)
 	rootCmd.AddCommand(createUserCmd)
 	if err := rootCmd.Execute(); err != nil {
