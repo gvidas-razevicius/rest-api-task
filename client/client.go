@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 
 	server "github.com/gvidas-razevicius/rest-api-task/server"
@@ -26,18 +25,18 @@ var getAgeCmd = &cobra.Command{
 	Use:   "get-age <name>",
 	Short: "Gets the age of a person by name",
 	Args:  cobra.ExactArgs(1),
-	Run:   getAge,
+	Run:   GetAge,
 }
 
 var createUserCmd = &cobra.Command{
 	Use:   "cr-user <name> <age>",
 	Short: "Creates user in server",
 	Args:  cobra.ExactArgs(2),
-	Run:   createUser,
+	Run:   CreateUser,
 }
 
 // Builds and performs a request given parameters.
-func makeRequest(method string, endpoint string, values url.Values, json []byte) (*http.Response, error) {
+func MakeRequest(method string, endpoint string, values url.Values, json []byte) (*http.Response, error) {
 	// Form body for request
 	var body io.Reader
 	if json != nil {
@@ -65,28 +64,31 @@ func makeRequest(method string, endpoint string, values url.Values, json []byte)
 }
 
 // Gets run for the get-age command and returns the age of the given persons name
-func getAge(cmd *cobra.Command, args []string) {
-	resp, err := makeRequest(http.MethodGet, args[0], nil, nil)
+func GetAge(cmd *cobra.Command, args []string) {
+	resp, err := MakeRequest(http.MethodGet, args[0], nil, nil)
 	if err != nil {
 		log.Fatalf("Could not make request: %v", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
+	switch resp.StatusCode {
+	case http.StatusOK:
 		var res server.User
 		if err := json.NewDecoder(resp.Body).Decode(&res); err != nil && err != io.EOF {
 			log.Fatalf("Could not decode results into json: %v", err)
 		}
 
 		fmt.Printf("%s is %d years old\n", res.Name, res.Age)
-	} else {
+	case http.StatusNotFound:
+		fmt.Printf("No user named %q was found\n", args[0])
+	default:
 		fmt.Println("Could not get results! Server responded with: ")
 		fmt.Println(resp.Status, resp.Header)
 	}
 }
 
 // Gets run for the cr-user command and returns the age of the given persons name
-func createUser(cmd *cobra.Command, args []string) {
+func CreateUser(cmd *cobra.Command, args []string) {
 	// Convert the string argument into int
 	age, err := strconv.Atoi(args[1])
 	if err != nil {
@@ -104,20 +106,21 @@ func createUser(cmd *cobra.Command, args []string) {
 		log.Fatalf("Could not encode data: %v", err)
 	}
 
-	resp, err := makeRequest(http.MethodPost, "", nil, userBytes)
+	resp, err := MakeRequest(http.MethodPost, "", nil, userBytes)
 	if err != nil {
 		log.Fatalf("Could not make request: %v", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
+	switch resp.StatusCode {
+	case http.StatusOK:
 		var res server.User
 		if err := json.NewDecoder(resp.Body).Decode(&res); err != nil && err != io.EOF {
 			log.Fatalf("Could not decode results into json: %v", err)
 		}
 
 		fmt.Println("User created!")
-	} else {
+	default:
 		fmt.Println("Could not create user! Server responded with: ")
 		fmt.Println(resp.Status, resp.Header)
 	}
@@ -126,8 +129,7 @@ func createUser(cmd *cobra.Command, args []string) {
 func main() {
 	rootCmd.AddCommand(getAgeCmd)
 	rootCmd.AddCommand(createUserCmd)
-	if err := getAgeCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your CLI '%s'", err)
-		os.Exit(1)
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatalf("There was an error while executing your CLI %v", err)
 	}
 }

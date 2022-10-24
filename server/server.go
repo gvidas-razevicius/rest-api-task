@@ -26,7 +26,7 @@ func getUserAge(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Error(w, "No such user", http.StatusBadRequest)
+	http.Error(w, "No such user", http.StatusNotFound)
 }
 
 func updateUser(w http.ResponseWriter, r *http.Request) {
