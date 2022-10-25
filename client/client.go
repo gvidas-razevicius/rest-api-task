@@ -121,12 +121,9 @@ func CreateUser(cmd *cobra.Command, args []string) {
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		var res server.User
-		if err := json.NewDecoder(resp.Body).Decode(&res); err != nil && err != io.EOF {
-			log.Fatalf("Could not decode results into json: %v", err)
-		}
-
 		fmt.Println("User created!")
+	case http.StatusForbidden:
+		fmt.Println("Could not create user. User already exists!")
 	default:
 		fmt.Println("Could not create user! Server responded with: ")
 		fmt.Println(resp.Status, resp.Header)

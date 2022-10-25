@@ -6,30 +6,25 @@ import (
 	"log"
 	"net/http"
 
-	mux "github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 )
 
-var users = []User{
-	{Name: "John", Age: 1},
-	{Name: "Peter", Age: 2},
-	{Name: "Mike", Age: 3},
-}
+var users map[string]User
 
 func getUserAge(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["name"]
 
-	for _, user := range users {
-		if user.Name == name {
-			json.NewEncoder(w).Encode(user)
-			return
-		}
-	}
+	res, found := users[name]
 
+	if found {
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 	http.Error(w, "No such user", http.StatusNotFound)
 }
 
-func updateUser(w http.ResponseWriter, r *http.Request) {
+func createUser(w http.ResponseWriter, r *http.Request) {
 	var u User
 	err := json.NewDecoder(r.Body).Decode(&u)
 	if err != nil {
@@ -38,15 +33,24 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users = append(users, u)
-
-	fmt.Println("Users updated: ")
-	fmt.Println(users)
+	if _, found := users[u.Name]; !found {
+		users[u.Name] = u
+		fmt.Println("User created: ")
+		fmt.Println(users)
+	} else {
+		http.Error(w, "User already exists!", http.StatusForbidden)
+		return
+	}
 }
 
 func HandleRequests() {
+	users = make(map[string]User)
+	users["John"] = User{Name: "John", Age: 1}
+	users["Peter"] = User{Name: "Peter", Age: 2}
+	users["Mike"] = User{Name: "Mike", Age: 3}
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/users/{name}", getUserAge).Methods(http.MethodGet)
-	router.HandleFunc("/users", updateUser).Methods(http.MethodPost)
+	router.HandleFunc("/users", createUser).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
