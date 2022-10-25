@@ -29,7 +29,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&u)
 	if err != nil {
 		http.Error(w, "Invalid Json", http.StatusBadRequest)
-		fmt.Println(err.Error())
 		return
 	}
 
@@ -39,7 +38,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(users)
 	} else {
 		http.Error(w, "User already exists!", http.StatusForbidden)
-		return
 	}
 }
 

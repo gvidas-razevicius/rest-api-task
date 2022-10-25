@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -72,25 +73,31 @@ func MakeRequest(method string, endpoint string, values url.Values, json []byte)
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetAge(cmd *cobra.Command, args []string) {
-	resp, err := MakeRequest(http.MethodGet, args[0], nil, nil)
+	resp, err := GetAgeResponse(MakeRequest(http.MethodGet, args[0], nil, nil))
 	if err != nil {
-		log.Fatalf("Could not make request: %v", err)
+		log.Fatalln(err)
+	}
+	fmt.Println(resp)
+}
+
+func GetAgeResponse(resp *http.Response, err error) (string, error) {
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("Could not make request: %v", err))
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
 		var res server.User
-		if err := json.NewDecoder(resp.Body).Decode(&res); err != nil && err != io.EOF {
-			log.Fatalf("Could not decode results into json: %v", err)
+		if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+			return "", errors.New(fmt.Sprintf("Could not decode results into json: %v", err))
 		}
 
-		fmt.Printf("%s is %d years old\n", res.Name, res.Age)
+		return fmt.Sprintf("%s is %d years old\n", res.Name, res.Age), nil
 	case http.StatusNotFound:
-		fmt.Printf("No user named %q was found\n", args[0])
+		return fmt.Sprintf("User was not found!\n"), nil
 	default:
-		fmt.Println("Could not get results! Server responded with: ")
-		fmt.Println(resp.Status, resp.Header)
+		return fmt.Sprintf("Could not get results! Server responded with: \n%s", resp.Status), nil
 	}
 }
 
@@ -113,20 +120,26 @@ func CreateUser(cmd *cobra.Command, args []string) {
 		log.Fatalf("Could not encode data: %v", err)
 	}
 
-	resp, err := MakeRequest(http.MethodPost, "", nil, userBytes)
+	resp, err := CreateUserResponse(MakeRequest(http.MethodPost, "", nil, userBytes))
 	if err != nil {
-		log.Fatalf("Could not make request: %v", err)
+		log.Fatalln(err)
+	}
+	fmt.Println(resp)
+}
+
+func CreateUserResponse(resp *http.Response, err error) (string, error) {
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("Could not make request: %v", err))
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		fmt.Println("User created!")
+		return "User created!", nil
 	case http.StatusForbidden:
-		fmt.Println("Could not create user. User already exists!")
+		return "Could not create user. User already exists!", nil
 	default:
-		fmt.Println("Could not create user! Server responded with: ")
-		fmt.Println(resp.Status, resp.Header)
+		return fmt.Sprintf("Could not get results! Server responded with: \n%s", resp.Status), nil
 	}
 }
 
