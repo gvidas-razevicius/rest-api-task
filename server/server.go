@@ -43,19 +43,14 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func delUser(w http.ResponseWriter, r *http.Request) {
-	var u User
-	err := json.NewDecoder(r.Body).Decode(&u)
-	if err != nil {
-		http.Error(w, "Invalid Json", http.StatusBadRequest)
-		return
-	}
+	vars := mux.Vars(r)
+	name := vars["name"]
 
-	if _, found := users[u.Name]; !found {
-		delete(users, u.Name)
+	if _, found := users[name]; found {
+		delete(users, name)
 		fmt.Println("User deleted: ")
 		fmt.Println(users)
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("User was deleted!"))
+		w.WriteHeader(http.StatusNoContent)
 	} else {
 		http.Error(w, "User not found!", http.StatusNotFound)
 	}
@@ -69,7 +64,7 @@ func HandleRequests() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/users/{name}", getUserAge).Methods(http.MethodGet)
-	router.HandleFunc("/users/{name}", getUserAge).Methods(http.MethodDelete)
+	router.HandleFunc("/users/{name}", delUser).Methods(http.MethodDelete)
 	router.HandleFunc("/users", createUser).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

@@ -35,6 +35,13 @@ var createUserCmd = &cobra.Command{
 	Run:   CreateUser,
 }
 
+var deleteUserCmd = &cobra.Command{
+	Use:   "del-user <name>",
+	Short: "Deletes user from server",
+	Args:  cobra.ExactArgs(1),
+	Run:   DeleteUser,
+}
+
 // Builds and performs a request given parameters.
 func MakeRequest(method string, endpoint string, values url.Values, json []byte) (*http.Response, error) {
 	// Form body for request
@@ -100,21 +107,27 @@ func CreateUser(cmd *cobra.Command, args []string) {
 	fmt.Println(FormResponse(resp))
 }
 
+func DeleteUser(cmd *cobra.Command, args []string) {
+	resp, err := MakeRequest(http.MethodDelete, args[0], nil, nil)
+	defer resp.Body.Close()
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("Could not make request: %v", err))
+	}
+
+	fmt.Println(FormResponse(resp))
+}
+
 func FormResponse(resp *http.Response) string {
 	switch resp.StatusCode {
 	case http.StatusOK:
-		// Not a great approach, should rework in the future
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Sprintf("Could not read from response body: %v", err)
-		}
 		var res server.User
-		err = json.Unmarshal(body, &res)
-		if err != nil {
-			return string(body)
+		if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+			return fmt.Sprintf("Could not decode results into json: %v", err)
 		}
 
 		return fmt.Sprintf("%s is %d years old\n", res.Name, res.Age)
+	case http.StatusNoContent:
+		return "User deleted!"
 	case http.StatusCreated:
 		return "User created!"
 	case http.StatusNotFound:
@@ -129,6 +142,7 @@ func FormResponse(resp *http.Response) string {
 func Execute() {
 	rootCmd.AddCommand(getAgeCmd)
 	rootCmd.AddCommand(createUserCmd)
+	rootCmd.AddCommand(deleteUserCmd)
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf("There was an error while executing your CLI %v", err)
 	}

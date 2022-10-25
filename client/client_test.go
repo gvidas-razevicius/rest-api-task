@@ -36,8 +36,7 @@ func TestFormResponse(t *testing.T) {
 		},
 		{
 			response: &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewBufferString("User deleted!")),
+				StatusCode: http.StatusNoContent,
 			},
 			output: "User deleted!",
 		},
