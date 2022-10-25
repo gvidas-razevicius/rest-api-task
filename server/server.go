@@ -36,8 +36,28 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		users[u.Name] = u
 		fmt.Println("User created: ")
 		fmt.Println(users)
+		w.WriteHeader(http.StatusCreated)
 	} else {
 		http.Error(w, "User already exists!", http.StatusForbidden)
+	}
+}
+
+func delUser(w http.ResponseWriter, r *http.Request) {
+	var u User
+	err := json.NewDecoder(r.Body).Decode(&u)
+	if err != nil {
+		http.Error(w, "Invalid Json", http.StatusBadRequest)
+		return
+	}
+
+	if _, found := users[u.Name]; !found {
+		delete(users, u.Name)
+		fmt.Println("User deleted: ")
+		fmt.Println(users)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("User was deleted!"))
+	} else {
+		http.Error(w, "User not found!", http.StatusNotFound)
 	}
 }
 
@@ -49,6 +69,7 @@ func HandleRequests() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/users/{name}", getUserAge).Methods(http.MethodGet)
+	router.HandleFunc("/users/{name}", getUserAge).Methods(http.MethodDelete)
 	router.HandleFunc("/users", createUser).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
