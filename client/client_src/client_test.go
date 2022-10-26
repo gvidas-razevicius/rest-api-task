@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gvidas-razevicius/rest-api-task/server"
+	server "github.com/gvidas-razevicius/rest-api-task/server/server_src"
 	"github.com/stretchr/testify/require"
 )
 
