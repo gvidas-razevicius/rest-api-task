@@ -14,8 +14,8 @@ type User struct {
 }
 
 type App struct {
-	Name    string `json:"name"`
-	Created StringInt
+	Name    string      `json:"name"`
+	Created StringInt   `json:"created"`
 	Price   StringFloat `json:"price"`
 }
 

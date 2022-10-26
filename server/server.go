@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -72,7 +73,6 @@ func getApp(w http.ResponseWriter, r *http.Request) {
 
 func createApp(w http.ResponseWriter, r *http.Request) {
 	var obj App
-	// TODO: add year created setting
 	err := json.NewDecoder(r.Body).Decode(&obj)
 	if err != nil {
 		http.Error(w, "Invalid Json", http.StatusBadRequest)
@@ -81,6 +81,7 @@ func createApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, found := apps[obj.Name]; !found {
+		obj.Created = StringInt(time.Now().Year())
 		apps[obj.Name] = obj
 		fmt.Println("App created: ")
 		fmt.Println(apps)

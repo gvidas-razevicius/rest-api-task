@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -15,7 +14,7 @@ import (
 func TestFormResponse(t *testing.T) {
 	type test struct {
 		response *http.Response
-		output   string
+		output   error
 	}
 
 	uJson := server.User{
@@ -32,42 +31,42 @@ func TestFormResponse(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body:       uJsonb,
 			},
-			output: fmt.Sprintf("%s is %d years old\n", uJson.Name, uJson.Age),
+			output: nil,
 		},
 		{
 			response: &http.Response{
 				StatusCode: http.StatusNoContent,
 			},
-			output: "User deleted!",
+			output: nil,
 		},
 		{
 			response: &http.Response{
 				StatusCode: http.StatusCreated,
 			},
-			output: "User created!",
+			output: nil,
 		},
 		{
 			response: &http.Response{
 				StatusCode: http.StatusNotFound,
 			},
-			output: "User was not found!",
+			output: ErrNotFound,
 		},
 		{
 			response: &http.Response{
 				StatusCode: http.StatusForbidden,
 			},
-			output: "Could not create user. User already exists!",
+			output: ErrForbidden,
 		},
 		{
 			response: &http.Response{
 				Status:     http.StatusText(http.StatusTeapot),
 				StatusCode: http.StatusTeapot,
 			},
-			output: fmt.Sprintf("Could not get results! Server responded with: \n%s", http.StatusText(http.StatusTeapot)),
+			output: ErrBadStatus{StatusMsg: http.StatusText(http.StatusTeapot)},
 		},
 	}
 
 	for _, testX := range tests {
-		require.Equal(t, testX.output, FormResponse(testX.response))
+		require.ErrorIs(t, testX.output, CheckStatus(testX.response))
 	}
 }
