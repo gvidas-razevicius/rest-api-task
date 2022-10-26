@@ -9,9 +9,8 @@ import (
 var rootCmd = &cobra.Command{}
 
 var getAgeCmd = &cobra.Command{
-	Use:           "get-age <name>",
+	Use:           "get-age <name>...",
 	Short:         "Gets the age of a person by name",
-	Args:          cobra.ExactArgs(1),
 	ValidArgs:     []string{"name"},
 	SilenceErrors: true,
 	SilenceUsage:  true,

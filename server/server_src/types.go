@@ -8,6 +8,18 @@ import (
 type StringInt int
 type StringFloat float64
 
+type NamesArray struct {
+	Array []string `json:"names"`
+}
+
+type UserArray struct {
+	Array []User `json:"users"`
+}
+
+type AppArray struct {
+	Array []App `json:"apps"`
+}
+
 type User struct {
 	Name string    `json:"name"`
 	Age  StringInt `json:"age"`

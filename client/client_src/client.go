@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strconv"
 
-	server "github.com/gvidas-razevicius/rest-api-task/server"
+	server "github.com/gvidas-razevicius/rest-api-task/server/server_src"
 	cobra "github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ const (
 // -file: the file name to add at the end of the endpoint url
 // -values: url values to add to the query
 // -json: the json payload
-func MakeRequest(method string, endpoint string, file string, values url.Values, json []byte) (*http.Response, error) {
+func MakeRequest(method string, endpoint string, values url.Values, json []byte) (*http.Response, error) {
 	// Form body for request
 	var body io.Reader
 	if json != nil {
@@ -46,15 +46,17 @@ func MakeRequest(method string, endpoint string, file string, values url.Values,
 		req.URL.RawQuery = values.Encode()
 	}
 
-	// Add additional path to URL
-	req.URL = req.URL.JoinPath(file)
-
 	return http.DefaultClient.Do(req)
 }
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetAge(cmd *cobra.Command, args []string) error {
-	resp, err := MakeRequest(http.MethodGet, APIusers, args[0], nil, nil)
+	payload, err := convArgsToBytes(args)
+	if err != nil {
+		return err
+	}
+
+	resp, err := MakeRequest(http.MethodGet, APIusers, nil, payload)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -64,12 +66,15 @@ func GetAge(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var res server.User
+	var res server.UserArray
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return ErrDecodeJson{JsonError: err}
 	}
 
-	fmt.Printf(green("%s is %d years old\n"), res.Name, res.Age)
+	for _, user := range res.Array {
+		fmt.Printf(green("%s is %d years old\n"), user.Name, user.Age)
+	}
+
 	return nil
 }
 
@@ -92,7 +97,7 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 		return ErrEncodeJson{JsonError: err}
 	}
 
-	resp, err := MakeRequest(http.MethodPost, APIusers, "", nil, userBytes)
+	resp, err := MakeRequest(http.MethodPost, APIusers, nil, userBytes)
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
 	}
@@ -106,7 +111,11 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 }
 
 func DeleteUser(cmd *cobra.Command, args []string) error {
-	resp, err := MakeRequest(http.MethodDelete, APIusers, args[0], nil, nil)
+	payload, err := convArgsToBytes(args)
+	if err != nil {
+		return err
+	}
+	resp, err := MakeRequest(http.MethodDelete, APIusers, nil, payload)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -122,7 +131,11 @@ func DeleteUser(cmd *cobra.Command, args []string) error {
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetApp(cmd *cobra.Command, args []string) error {
-	resp, err := MakeRequest(http.MethodGet, APIapp, args[0], nil, nil)
+	payload, err := convArgsToBytes(args)
+	if err != nil {
+		return err
+	}
+	resp, err := MakeRequest(http.MethodGet, APIapp, nil, payload)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -160,7 +173,7 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 		return ErrEncodeJson{JsonError: err}
 	}
 
-	resp, err := MakeRequest(http.MethodPost, APIapp, "", nil, userBytes)
+	resp, err := MakeRequest(http.MethodPost, APIapp, nil, userBytes)
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
 	}
@@ -174,7 +187,11 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 }
 
 func DeleteApp(cmd *cobra.Command, args []string) error {
-	resp, err := MakeRequest(http.MethodDelete, APIapp, args[0], nil, nil)
+	payload, err := convArgsToBytes(args)
+	if err != nil {
+		return err
+	}
+	resp, err := MakeRequest(http.MethodDelete, APIapp, nil, payload)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -186,6 +203,15 @@ func DeleteApp(cmd *cobra.Command, args []string) error {
 
 	fmt.Println(green("App deleted!"))
 	return nil
+}
+
+func convArgsToBytes(args []string) ([]byte, error) {
+	names := server.NamesArray{Array: args}
+	userBytes, err := json.Marshal(names)
+	if err != nil && err != io.EOF {
+		return nil, ErrEncodeJson{JsonError: err}
+	}
+	return userBytes, nil
 }
 
 func CheckStatus(resp *http.Response) error {

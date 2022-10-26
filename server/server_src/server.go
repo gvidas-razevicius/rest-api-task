@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -14,16 +15,26 @@ var users map[string]User
 var apps map[string]App
 
 func getUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
-
-	res, found := users[name]
-
-	if found {
-		json.NewEncoder(w).Encode(res)
+	var names NamesArray
+	err := names.DecodePayload(r.Body, false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	http.Error(w, "No such user", http.StatusNotFound)
+
+	var res UserArray
+	res.Array = make([]User, len(names.Array))
+	for i, name := range names.Array {
+		user, found := users[name]
+
+		if !found {
+			http.Error(w, "One or more user was not found", http.StatusNotFound)
+			return
+		}
+
+		res.Array[i] = user
+	}
+	json.NewEncoder(w).Encode(res)
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
@@ -36,8 +47,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	if _, found := users[obj.Name]; !found {
 		users[obj.Name] = obj
-		fmt.Println("User created: ")
-		fmt.Println(users)
+		fmt.Println("User created: ", users)
 		w.WriteHeader(http.StatusCreated)
 	} else {
 		http.Error(w, "User already exists!", http.StatusForbidden)
@@ -45,13 +55,17 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func delUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
+	var names NamesArray
+	err := names.DecodePayload(r.Body, true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	name := names.Array[0]
 	if _, found := users[name]; found {
 		delete(users, name)
-		fmt.Println("User deleted: ")
-		fmt.Println(users)
+		fmt.Println("User deleted: ", users)
 		w.WriteHeader(http.StatusNoContent)
 	} else {
 		http.Error(w, "User not found!", http.StatusNotFound)
@@ -59,12 +73,16 @@ func delUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getApp(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
+	var names NamesArray
+	err := names.DecodePayload(r.Body, true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	res, found := apps[name]
+	name := names.Array[0]
 
-	if found {
+	if res, found := apps[name]; found {
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -83,8 +101,7 @@ func createApp(w http.ResponseWriter, r *http.Request) {
 	if _, found := apps[obj.Name]; !found {
 		obj.Created = StringInt(time.Now().Year())
 		apps[obj.Name] = obj
-		fmt.Println("App created: ")
-		fmt.Println(apps)
+		fmt.Println("App created: ", apps)
 		w.WriteHeader(http.StatusCreated)
 	} else {
 		http.Error(w, "App already exists!", http.StatusForbidden)
@@ -92,17 +109,37 @@ func createApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func delApp(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
+	var names NamesArray
+	err := names.DecodePayload(r.Body, true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	name := names.Array[0]
 	if _, found := apps[name]; found {
 		delete(apps, name)
-		fmt.Println("App deleted: ")
-		fmt.Println(apps)
+		fmt.Println("App deleted: ", apps)
 		w.WriteHeader(http.StatusNoContent)
 	} else {
 		http.Error(w, "App not found!", http.StatusNotFound)
 	}
+}
+
+// Decodes the payload into input. Returns an error message to be pased into the body of response
+// if anything goes wrong.
+// -payload: the body of the request
+// -enfSingle: enforce single value. If true returns error if payload has more than one object
+func (input *NamesArray) DecodePayload(payload io.Reader, enfSingle bool) error {
+	if err := json.NewDecoder(payload).Decode(&input); err != nil || len(input.Array) == 0 {
+		return fmt.Errorf("Bad payload")
+	}
+
+	if len(input.Array) > 1 && enfSingle {
+		return fmt.Errorf("Cannot process multiple objects")
+	}
+
+	return nil
 }
 
 func HandleRequests() {
@@ -113,11 +150,11 @@ func HandleRequests() {
 	users["Mike"] = User{Name: "Mike", Age: 3}
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/users/{name}", getUser).Methods(http.MethodGet)
-	router.HandleFunc("/users/{name}", delUser).Methods(http.MethodDelete)
+	router.HandleFunc("/users", getUser).Methods(http.MethodGet)
+	router.HandleFunc("/users", delUser).Methods(http.MethodDelete)
 	router.HandleFunc("/users", createUser).Methods(http.MethodPost)
-	router.HandleFunc("/app/{name}", getApp).Methods(http.MethodGet)
-	router.HandleFunc("/app/{name}", delApp).Methods(http.MethodDelete)
+	router.HandleFunc("/app", getApp).Methods(http.MethodGet)
+	router.HandleFunc("/app", delApp).Methods(http.MethodDelete)
 	router.HandleFunc("/app", createApp).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
