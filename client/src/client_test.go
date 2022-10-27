@@ -19,7 +19,7 @@ func TestFormResponse(t *testing.T) {
 
 	uJson := server.User{
 		Name: "Test",
-		Age:  server.StringInt(100),
+		Age:  100,
 	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(uJson)

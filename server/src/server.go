@@ -35,7 +35,10 @@ func delApp(w http.ResponseWriter, r *http.Request) {
 
 func get[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 	names := r.URL.Query()["names"]
-
+	if len(names) == 0 {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
 	res := make([]T, len(names))
 	for i, name := range names {
 		obj, found := mem[name]
@@ -62,7 +65,7 @@ func create[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) 
 	name := obj.GetName()
 	if _, found := cache.Apps[name]; !found {
 		mem[obj.GetName()] = obj
-		fmt.Printf("%T created: %v", mem[name], mem)
+		fmt.Printf("%s created: \n%v\n", mem[name].GetType(), mem)
 		w.WriteHeader(http.StatusCreated)
 		go writeToDisk()
 	} else {
@@ -83,7 +86,7 @@ func del[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 	name := names[0]
 	if _, found := mem[name]; found {
 		delete(mem, name)
-		fmt.Printf("%T deleted: %v", mem[name], mem)
+		fmt.Printf("%s deleted: %v\n", mem[name].GetType(), mem)
 		w.WriteHeader(http.StatusNoContent)
 		go writeToDisk()
 	} else {

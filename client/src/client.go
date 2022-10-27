@@ -75,7 +75,7 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 	// Form the json struct
 	user := server.User{
 		Name: args[0],
-		Age:  server.StringInt(age),
+		Age:  age,
 	}
 
 	// Marshal data struct
@@ -129,8 +129,8 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 	// Form the json struct
 	app := server.App{
 		Name:    args[0],
-		Price:   server.StringFloat(price),
-		Created: server.StringInt(time.Now().Year()),
+		Price:   price,
+		Created: time.Now().Year(),
 	}
 
 	// Marshal data struct

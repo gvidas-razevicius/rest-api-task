@@ -40,7 +40,6 @@ var deleteUserCmd = &cobra.Command{
 var getAppCmd = &cobra.Command{
 	Use:           "get-app <name>",
 	Short:         "Gets the app info",
-	Args:          cobra.ExactArgs(1),
 	ValidArgs:     []string{"name"},
 	SilenceErrors: true,
 	SilenceUsage:  true,
