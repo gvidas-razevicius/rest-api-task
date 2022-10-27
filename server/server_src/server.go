@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -12,16 +11,11 @@ import (
 )
 
 func getUser(w http.ResponseWriter, r *http.Request) {
-	var names NamesArray
-	err := names.DecodePayload(r.Body, false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	names := r.URL.Query()["names"]
 
 	var res UserArray
-	res.Array = make([]User, len(names.Array))
-	for i, name := range names.Array {
+	res.Array = make([]User, len(names))
+	for i, name := range names {
 		user, found := cache.Users[name]
 
 		if !found {
@@ -53,14 +47,13 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func delUser(w http.ResponseWriter, r *http.Request) {
-	var names NamesArray
-	err := names.DecodePayload(r.Body, true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	names := r.URL.Query()["names"]
+	if len(names) > 1 {
+		http.Error(w, "Cannot process multiple objects", http.StatusBadRequest)
 		return
 	}
 
-	name := names.Array[0]
+	name := names[0]
 	if _, found := cache.Users[name]; found {
 		delete(cache.Users, name)
 		fmt.Println("User deleted: ", cache.Users)
@@ -72,14 +65,13 @@ func delUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getApp(w http.ResponseWriter, r *http.Request) {
-	var names NamesArray
-	err := names.DecodePayload(r.Body, true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	names := r.URL.Query()["names"]
+	if len(names) > 1 {
+		http.Error(w, "Cannot process multiple objects", http.StatusBadRequest)
 		return
 	}
 
-	name := names.Array[0]
+	name := names[0]
 
 	if res, found := cache.Apps[name]; found {
 		json.NewEncoder(w).Encode(res)
@@ -109,14 +101,13 @@ func createApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func delApp(w http.ResponseWriter, r *http.Request) {
-	var names NamesArray
-	err := names.DecodePayload(r.Body, true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	names := r.URL.Query()["names"]
+	if len(names) > 1 {
+		http.Error(w, "Cannot process multiple objects", http.StatusBadRequest)
 		return
 	}
 
-	name := names.Array[0]
+	name := names[0]
 	if _, found := cache.Apps[name]; found {
 		delete(cache.Apps, name)
 		fmt.Println("App deleted: ", cache.Apps)
@@ -125,22 +116,6 @@ func delApp(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "App not found!", http.StatusNotFound)
 	}
-}
-
-// Decodes the payload into input. Returns an error message to be pased into the body of response
-// if anything goes wrong.
-// -payload: the body of the request
-// -enfSingle: enforce single value. If true returns error if payload has more than one object
-func (input *NamesArray) DecodePayload(payload io.Reader, enfSingle bool) error {
-	if err := json.NewDecoder(payload).Decode(&input); err != nil || len(input.Array) == 0 {
-		return fmt.Errorf("Bad payload")
-	}
-
-	if len(input.Array) > 1 && enfSingle {
-		return fmt.Errorf("Cannot process multiple objects")
-	}
-
-	return nil
 }
 
 func HandleRequests() {
@@ -153,8 +128,8 @@ func HandleRequests() {
 	router.HandleFunc("/users", getUser).Methods(http.MethodGet)
 	router.HandleFunc("/users", delUser).Methods(http.MethodDelete)
 	router.HandleFunc("/users", createUser).Methods(http.MethodPost)
-	router.HandleFunc("/app", getApp).Methods(http.MethodGet)
-	router.HandleFunc("/app", delApp).Methods(http.MethodDelete)
-	router.HandleFunc("/app", createApp).Methods(http.MethodPost)
+	router.HandleFunc("/apps", getApp).Methods(http.MethodGet)
+	router.HandleFunc("/apps", delApp).Methods(http.MethodDelete)
+	router.HandleFunc("/apps", createApp).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

@@ -8,10 +8,6 @@ import (
 type StringInt int
 type StringFloat float64
 
-type NamesArray struct {
-	Array []string `json:"names"`
-}
-
 type UserArray struct {
 	Array []User `json:"users"`
 }

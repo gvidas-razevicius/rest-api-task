@@ -16,7 +16,7 @@ import (
 const (
 	APIroot  = "http://localhost:8080"
 	APIusers = APIroot + "/users"
-	APIapp   = APIroot + "/app"
+	APIapp   = APIroot + "/apps"
 )
 
 // Builds and performs a request given parameters.
@@ -51,12 +51,11 @@ func MakeRequest(method string, endpoint string, values url.Values, json []byte)
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetAge(cmd *cobra.Command, args []string) error {
-	payload, err := convArgsToBytes(args)
-	if err != nil {
-		return err
+	val := url.Values{
+		"names": args,
 	}
 
-	resp, err := MakeRequest(http.MethodGet, APIusers, nil, payload)
+	resp, err := MakeRequest(http.MethodGet, APIusers, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -111,11 +110,10 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 }
 
 func DeleteUser(cmd *cobra.Command, args []string) error {
-	payload, err := convArgsToBytes(args)
-	if err != nil {
-		return err
+	val := url.Values{
+		"names": args,
 	}
-	resp, err := MakeRequest(http.MethodDelete, APIusers, nil, payload)
+	resp, err := MakeRequest(http.MethodDelete, APIusers, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -131,11 +129,10 @@ func DeleteUser(cmd *cobra.Command, args []string) error {
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetApp(cmd *cobra.Command, args []string) error {
-	payload, err := convArgsToBytes(args)
-	if err != nil {
-		return err
+	val := url.Values{
+		"names": args,
 	}
-	resp, err := MakeRequest(http.MethodGet, APIapp, nil, payload)
+	resp, err := MakeRequest(http.MethodGet, APIapp, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -187,11 +184,10 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 }
 
 func DeleteApp(cmd *cobra.Command, args []string) error {
-	payload, err := convArgsToBytes(args)
-	if err != nil {
-		return err
+	val := url.Values{
+		"names": args,
 	}
-	resp, err := MakeRequest(http.MethodDelete, APIapp, nil, payload)
+	resp, err := MakeRequest(http.MethodDelete, APIapp, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -203,15 +199,6 @@ func DeleteApp(cmd *cobra.Command, args []string) error {
 
 	fmt.Println(green("App deleted!"))
 	return nil
-}
-
-func convArgsToBytes(args []string) ([]byte, error) {
-	names := server.NamesArray{Array: args}
-	userBytes, err := json.Marshal(names)
-	if err != nil && err != io.EOF {
-		return nil, ErrEncodeJson{JsonError: err}
-	}
-	return userBytes, nil
 }
 
 func CheckStatus(resp *http.Response) error {
