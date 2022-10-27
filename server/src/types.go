@@ -8,14 +8,6 @@ import (
 type StringInt int
 type StringFloat float64
 
-type UserArray struct {
-	Array []User `json:"users"`
-}
-
-type AppArray struct {
-	Array []App `json:"apps"`
-}
-
 type Objects struct {
 	Users map[string]User `json:"users"`
 	Apps  map[string]App  `json:"apps"`
@@ -26,10 +18,26 @@ type User struct {
 	Age  StringInt `json:"age"`
 }
 
+func (u User) GetName() string {
+	return u.Name
+}
+
+func (u User) GetType() string {
+	return "User"
+}
+
 type App struct {
 	Name    string      `json:"name"`
 	Created StringInt   `json:"created"`
 	Price   StringFloat `json:"price"`
+}
+
+func (u App) GetName() string {
+	return u.Name
+}
+
+func (u App) GetType() string {
+	return "App"
 }
 
 func (st *StringInt) UnmarshalJSON(b []byte) error {

@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
-	server "github.com/gvidas-razevicius/rest-api-task/server/server_src"
+	server "github.com/gvidas-razevicius/rest-api-task/server/src"
 	cobra "github.com/spf13/cobra"
 )
 
@@ -51,26 +52,13 @@ func MakeRequest(method string, endpoint string, values url.Values, json []byte)
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetAge(cmd *cobra.Command, args []string) error {
-	val := url.Values{
-		"names": args,
-	}
+	var res []server.User
 
-	resp, err := MakeRequest(http.MethodGet, APIusers, val, nil)
-	defer resp.Body.Close()
-	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
-
-	if err := CheckStatus(resp); err != nil {
+	if err := get(args, &res, APIusers); err != nil {
 		return err
 	}
 
-	var res server.UserArray
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return ErrDecodeJson{JsonError: err}
-	}
-
-	for _, user := range res.Array {
+	for _, user := range res {
 		fmt.Printf(green("%s is %d years old\n"), user.Name, user.Age)
 	}
 
@@ -110,44 +98,24 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 }
 
 func DeleteUser(cmd *cobra.Command, args []string) error {
-	val := url.Values{
-		"names": args,
-	}
-	resp, err := MakeRequest(http.MethodDelete, APIusers, val, nil)
-	defer resp.Body.Close()
-	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
-
-	if err := CheckStatus(resp); err != nil {
+	if err := del(args, APIusers); err != nil {
 		return err
 	}
-
 	fmt.Println(green("User deleted!"))
 	return nil
 }
 
 // Gets run for the get-age command and returns the age of the given persons name
 func GetApp(cmd *cobra.Command, args []string) error {
-	val := url.Values{
-		"names": args,
-	}
-	resp, err := MakeRequest(http.MethodGet, APIapp, val, nil)
-	defer resp.Body.Close()
-	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
+	var res []server.App
 
-	if err := CheckStatus(resp); err != nil {
+	if err := get(args, &res, APIapp); err != nil {
 		return err
 	}
 
-	var res server.App
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return ErrDecodeJson{JsonError: err}
+	for _, app := range res {
+		fmt.Printf("%s costs %f and was created in %d\n", app.Name, app.Price, app.Created)
 	}
-
-	fmt.Printf("%s costs %f and was created in %d\n", res.Name, res.Price, res.Created)
 	return nil
 }
 
@@ -160,8 +128,9 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 	}
 	// Form the json struct
 	app := server.App{
-		Name:  args[0],
-		Price: server.StringFloat(price),
+		Name:    args[0],
+		Price:   server.StringFloat(price),
+		Created: server.StringInt(time.Now().Year()),
 	}
 
 	// Marshal data struct
@@ -184,10 +153,18 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 }
 
 func DeleteApp(cmd *cobra.Command, args []string) error {
+	if err := del(args, APIapp); err != nil {
+		return err
+	}
+	fmt.Println(green("App deleted!"))
+	return nil
+}
+
+func get[T server.Object](args []string, result *[]T, endpoint string) error {
 	val := url.Values{
 		"names": args,
 	}
-	resp, err := MakeRequest(http.MethodDelete, APIapp, val, nil)
+	resp, err := MakeRequest(http.MethodGet, endpoint, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
 		return ErrMakeRequest{RequestErr: err}
@@ -197,7 +174,27 @@ func DeleteApp(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println(green("App deleted!"))
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return ErrDecodeJson{JsonError: err}
+	}
+
+	return nil
+}
+
+func del(args []string, endpoint string) error {
+	val := url.Values{
+		"names": args,
+	}
+	resp, err := MakeRequest(http.MethodDelete, endpoint, val, nil)
+	defer resp.Body.Close()
+	if err != nil {
+		return ErrMakeRequest{RequestErr: err}
+	}
+
+	if err := CheckStatus(resp); err != nil {
+		return err
+	}
+
 	return nil
 }
 

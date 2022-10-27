@@ -1,7 +1,7 @@
 package main
 
 import (
-	server "github.com/gvidas-razevicius/rest-api-task/server/server_src"
+	server "github.com/gvidas-razevicius/rest-api-task/server/src"
 )
 
 func main() {

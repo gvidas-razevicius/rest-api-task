@@ -12,7 +12,7 @@ var cache = Objects{
 	Apps:  make(map[string]App),
 }
 
-const filePath = "server/server_src/data.json"
+const filePath = "server/data/data.json"
 
 func initDb() error {
 	return readToMemory()
