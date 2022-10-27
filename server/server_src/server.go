@@ -11,9 +11,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var users map[string]User
-var apps map[string]App
-
 func getUser(w http.ResponseWriter, r *http.Request) {
 	var names NamesArray
 	err := names.DecodePayload(r.Body, false)
@@ -25,7 +22,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	var res UserArray
 	res.Array = make([]User, len(names.Array))
 	for i, name := range names.Array {
-		user, found := users[name]
+		user, found := cache.Users[name]
 
 		if !found {
 			http.Error(w, "One or more user was not found", http.StatusNotFound)
@@ -45,10 +42,11 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, found := users[obj.Name]; !found {
-		users[obj.Name] = obj
-		fmt.Println("User created: ", users)
+	if _, found := cache.Users[obj.Name]; !found {
+		cache.Users[obj.Name] = obj
+		fmt.Println("User created: ", cache.Users)
 		w.WriteHeader(http.StatusCreated)
+		go writeToDisk()
 	} else {
 		http.Error(w, "User already exists!", http.StatusForbidden)
 	}
@@ -63,10 +61,11 @@ func delUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := names.Array[0]
-	if _, found := users[name]; found {
-		delete(users, name)
-		fmt.Println("User deleted: ", users)
+	if _, found := cache.Users[name]; found {
+		delete(cache.Users, name)
+		fmt.Println("User deleted: ", cache.Users)
 		w.WriteHeader(http.StatusNoContent)
+		go writeToDisk()
 	} else {
 		http.Error(w, "User not found!", http.StatusNotFound)
 	}
@@ -82,7 +81,7 @@ func getApp(w http.ResponseWriter, r *http.Request) {
 
 	name := names.Array[0]
 
-	if res, found := apps[name]; found {
+	if res, found := cache.Apps[name]; found {
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -98,11 +97,12 @@ func createApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, found := apps[obj.Name]; !found {
+	if _, found := cache.Apps[obj.Name]; !found {
 		obj.Created = StringInt(time.Now().Year())
-		apps[obj.Name] = obj
-		fmt.Println("App created: ", apps)
+		cache.Apps[obj.Name] = obj
+		fmt.Println("App created: ", cache.Apps)
 		w.WriteHeader(http.StatusCreated)
+		go writeToDisk()
 	} else {
 		http.Error(w, "App already exists!", http.StatusForbidden)
 	}
@@ -117,10 +117,11 @@ func delApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := names.Array[0]
-	if _, found := apps[name]; found {
-		delete(apps, name)
-		fmt.Println("App deleted: ", apps)
+	if _, found := cache.Apps[name]; found {
+		delete(cache.Apps, name)
+		fmt.Println("App deleted: ", cache.Apps)
 		w.WriteHeader(http.StatusNoContent)
+		go writeToDisk()
 	} else {
 		http.Error(w, "App not found!", http.StatusNotFound)
 	}
@@ -143,11 +144,10 @@ func (input *NamesArray) DecodePayload(payload io.Reader, enfSingle bool) error 
 }
 
 func HandleRequests() {
-	users = make(map[string]User)
-	apps = make(map[string]App)
-	users["John"] = User{Name: "John", Age: 1}
-	users["Peter"] = User{Name: "Peter", Age: 2}
-	users["Mike"] = User{Name: "Mike", Age: 3}
+	if err := initDb(); err != nil {
+		log.Fatalf("Could not initiliase the database: %v", err)
+	}
+	fmt.Println(cache)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/users", getUser).Methods(http.MethodGet)

@@ -20,6 +20,11 @@ type AppArray struct {
 	Array []App `json:"apps"`
 }
 
+type Objects struct {
+	Users map[string]User `json:"users"`
+	Apps  map[string]App  `json:"apps"`
+}
+
 type User struct {
 	Name string    `json:"name"`
 	Age  StringInt `json:"age"`
