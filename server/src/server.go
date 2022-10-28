@@ -33,6 +33,7 @@ func delApp(w http.ResponseWriter, r *http.Request) {
 	del(w, r, cache.Apps)
 }
 
+// Fetch requested T objects from memory and write to response
 func get[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 	names := r.URL.Query()["names"]
 	if len(names) == 0 {
@@ -53,6 +54,7 @@ func get[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 	json.NewEncoder(w).Encode(res)
 }
 
+// Create T object provided in request payload in the mem map and write to disk
 func create[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 	var obj T
 	err := json.NewDecoder(r.Body).Decode(&obj)
@@ -67,12 +69,15 @@ func create[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) 
 		mem[obj.GetName()] = obj
 		fmt.Printf("%s created: \n%v\n", mem[name].GetType(), mem)
 		w.WriteHeader(http.StatusCreated)
+
+		// Not guaranteed to write!!!
 		go writeToDisk()
 	} else {
-		http.Error(w, fmt.Sprintf("%s not found!", mem[name].GetType()), http.StatusForbidden)
+		http.Error(w, fmt.Sprintf("%s already exists!", mem[name].GetType()), http.StatusForbidden)
 	}
 }
 
+// Delete T object provided in request payload from memory and write to disk
 func del[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 	names := r.URL.Query()["names"]
 	if len(names) > 1 {
@@ -88,6 +93,8 @@ func del[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) {
 		delete(mem, name)
 		fmt.Printf("%s deleted: %v\n", mem[name].GetType(), mem)
 		w.WriteHeader(http.StatusNoContent)
+
+		// Not guaranteed to write!!!
 		go writeToDisk()
 	} else {
 		http.Error(w, fmt.Sprintf("%s not found!", mem[name].GetType()), http.StatusNotFound)

@@ -75,7 +75,7 @@ func GetAge(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Gets run for the cr-user command and returns the age of the given persons name
+// Gets run for the cr-user command and creates user object
 func CreateUser(cmd *cobra.Command, args []string) error {
 	// Convert the string argument into int
 	age, err := strconv.Atoi(args[1])
@@ -95,6 +95,7 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// Gets run by the del-user command and deletes user object
 func DeleteUser(cmd *cobra.Command, args []string) error {
 	if err := del(args, APIusers); err != nil {
 		return err
@@ -103,7 +104,7 @@ func DeleteUser(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Gets run for the get-age command and returns the age of the given persons name
+// Gets run for the get-app command and returns the app
 func GetApp(cmd *cobra.Command, args []string) error {
 	var res []server.App
 
@@ -117,7 +118,7 @@ func GetApp(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Gets run for the cr-user command and returns the age of the given persons name
+// Gets run for the cr-app command and creates an app object
 func CreateApp(cmd *cobra.Command, args []string) error {
 	// Convert the string argument into float
 	price, err := strconv.ParseFloat(args[1], 64)
@@ -139,6 +140,7 @@ func CreateApp(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// Gets run by the del-app command
 func DeleteApp(cmd *cobra.Command, args []string) error {
 	if err := del(args, APIapp); err != nil {
 		return err
@@ -147,6 +149,7 @@ func DeleteApp(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// Populates result with T objects requested from server
 func get[T server.Object](args []string, result *[]T, endpoint string) error {
 	val := url.Values{
 		"names": args,
@@ -164,6 +167,7 @@ func get[T server.Object](args []string, result *[]T, endpoint string) error {
 	return nil
 }
 
+// Creates the T object by sending the request to server
 func create[T server.Object](endpoint string, obj T) error {
 	// Marshal data struct
 	userBytes, err := json.Marshal(obj)
@@ -180,6 +184,7 @@ func create[T server.Object](endpoint string, obj T) error {
 	return nil
 }
 
+// Deletes obj specified in args by sending request to server
 func del(args []string, endpoint string) error {
 	val := url.Values{
 		"names": args,
@@ -193,6 +198,7 @@ func del(args []string, endpoint string) error {
 	return nil
 }
 
+// Checks the status code of the response and returns an error
 func CheckStatus(resp *http.Response) error {
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusNoContent, http.StatusCreated:

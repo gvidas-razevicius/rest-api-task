@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFormResponse(t *testing.T) {
+func TestCheckStatus(t *testing.T) {
 	type test struct {
 		response *http.Response
 		output   error
