@@ -155,10 +155,10 @@ func get[T server.Object](args []string, result *[]T, endpoint string) error {
 		"names": args,
 	}
 	resp, err := MakeRequest(http.MethodGet, endpoint, val, nil)
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return ErrDecodeJson{JsonError: err}
@@ -176,10 +176,10 @@ func create[T server.Object](endpoint string, obj T) error {
 	}
 
 	resp, err := MakeRequest(http.MethodPost, endpoint, nil, userBytes)
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	return nil
 }
@@ -190,10 +190,10 @@ func del(args []string, endpoint string) error {
 		"names": args,
 	}
 	resp, err := MakeRequest(http.MethodDelete, endpoint, val, nil)
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	return nil
 }

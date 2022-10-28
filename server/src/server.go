@@ -65,7 +65,7 @@ func create[T Object](w http.ResponseWriter, r *http.Request, mem map[string]T) 
 	}
 
 	name := obj.GetName()
-	if _, found := cache.Apps[name]; !found {
+	if _, found := mem[name]; !found {
 		mem[obj.GetName()] = obj
 		fmt.Printf("%s created: \n%v\n", mem[name].GetType(), mem)
 		w.WriteHeader(http.StatusCreated)
