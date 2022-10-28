@@ -21,6 +21,6 @@ By running `client/main.go` these commands can be run: get-age, get-app, cr-user
 
 ## TODO
 
-[] Add more tests
-[] Make writing to disk more robust
-[] Improve server logging
+- [ ] Add more tests
+- [ ] Make writing to disk more robust
+- [ ] Improve server logging
