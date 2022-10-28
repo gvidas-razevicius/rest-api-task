@@ -15,7 +15,7 @@ var (
 )
 
 var (
-	ErrNotFound  error = errors.New(red("object was not found!"))
+	ErrNotFound  error = errors.New(red("one or more objects were not found!"))
 	ErrForbidden error = errors.New(red("object already exists!"))
 )
 
@@ -40,6 +40,10 @@ type ErrDecodeJson struct {
 	JsonError error
 }
 
+type ErrServerNegative struct {
+	NegativeMsg error
+}
+
 func (err ErrBadStatus) Error() string {
 	return fmt.Sprintf("server returned: \n%s", err.StatusMsg)
 }
@@ -58,4 +62,8 @@ func (err ErrDecodeJson) Error() string {
 
 func (err ErrTypeInvalid) Error() string {
 	return fmt.Sprintf(red("%s type is invalid: %v"), err.ArgName, err.TypeErr)
+}
+
+func (err ErrServerNegative) Error() string {
+	return fmt.Sprintf("server could not process request: \n%s", err.NegativeMsg)
 }

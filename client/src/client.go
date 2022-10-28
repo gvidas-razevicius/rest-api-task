@@ -23,7 +23,6 @@ const (
 // Builds and performs a request given parameters.
 // -method: the REST method to use in request
 // -endpoint: the API endpoint url
-// -file: the file name to add at the end of the endpoint url
 // -values: url values to add to the query
 // -json: the json payload
 func MakeRequest(method string, endpoint string, values url.Values, json []byte) (*http.Response, error) {
@@ -47,7 +46,18 @@ func MakeRequest(method string, endpoint string, values url.Values, json []byte)
 		req.URL.RawQuery = values.Encode()
 	}
 
-	return http.DefaultClient.Do(req)
+	// Do request
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return resp, ErrMakeRequest{RequestErr: err}
+	}
+
+	if err := CheckStatus(resp); err != nil {
+		return resp, ErrServerNegative{NegativeMsg: err}
+	}
+
+	return resp, err
 }
 
 // Gets run for the get-age command and returns the age of the given persons name
@@ -72,24 +82,12 @@ func CreateUser(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return ErrTypeInvalid{ArgName: cmd.ValidArgs[1], TypeErr: err}
 	}
-	// Form the json struct
-	user := server.User{
+
+	obj := server.User{
 		Name: args[0],
 		Age:  age,
 	}
-
-	// Marshal data struct
-	userBytes, err := json.Marshal(user)
-	if err != nil && err != io.EOF {
-		return ErrEncodeJson{JsonError: err}
-	}
-
-	resp, err := MakeRequest(http.MethodPost, APIusers, nil, userBytes)
-	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
-
-	if err := CheckStatus(resp); err != nil {
+	if err := create(APIusers, obj); err != nil {
 		return err
 	}
 
@@ -121,30 +119,19 @@ func GetApp(cmd *cobra.Command, args []string) error {
 
 // Gets run for the cr-user command and returns the age of the given persons name
 func CreateApp(cmd *cobra.Command, args []string) error {
-	// Convert the string argument into int
+	// Convert the string argument into float
 	price, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return ErrTypeInvalid{ArgName: cmd.ValidArgs[1], TypeErr: err}
 	}
-	// Form the json struct
-	app := server.App{
+
+	obj := server.App{
 		Name:    args[0],
 		Price:   price,
 		Created: time.Now().Year(),
 	}
 
-	// Marshal data struct
-	userBytes, err := json.Marshal(app)
-	if err != nil && err != io.EOF {
-		return ErrEncodeJson{JsonError: err}
-	}
-
-	resp, err := MakeRequest(http.MethodPost, APIapp, nil, userBytes)
-	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
-
-	if err := CheckStatus(resp); err != nil {
+	if err := create(APIapp, obj); err != nil {
 		return err
 	}
 
@@ -167,15 +154,27 @@ func get[T server.Object](args []string, result *[]T, endpoint string) error {
 	resp, err := MakeRequest(http.MethodGet, endpoint, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
-
-	if err := CheckStatus(resp); err != nil {
 		return err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return ErrDecodeJson{JsonError: err}
+	}
+
+	return nil
+}
+
+func create[T server.Object](endpoint string, obj T) error {
+	// Marshal data struct
+	userBytes, err := json.Marshal(obj)
+	if err != nil && err != io.EOF {
+		return ErrEncodeJson{JsonError: err}
+	}
+
+	resp, err := MakeRequest(http.MethodPost, endpoint, nil, userBytes)
+	defer resp.Body.Close()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -188,10 +187,6 @@ func del(args []string, endpoint string) error {
 	resp, err := MakeRequest(http.MethodDelete, endpoint, val, nil)
 	defer resp.Body.Close()
 	if err != nil {
-		return ErrMakeRequest{RequestErr: err}
-	}
-
-	if err := CheckStatus(resp); err != nil {
 		return err
 	}
 

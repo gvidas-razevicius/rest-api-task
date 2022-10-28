@@ -10,11 +10,11 @@ type User struct {
 	Age  int    `json:"age"`
 }
 
-func (u User) GetName() string {
-	return u.Name
+func (o User) GetName() string {
+	return o.Name
 }
 
-func (u User) GetType() string {
+func (o User) GetType() string {
 	return "User"
 }
 
@@ -24,10 +24,10 @@ type App struct {
 	Price   float64 `json:"price"`
 }
 
-func (u App) GetName() string {
-	return u.Name
+func (o App) GetName() string {
+	return o.Name
 }
 
-func (u App) GetType() string {
+func (o App) GetType() string {
 	return "App"
 }
