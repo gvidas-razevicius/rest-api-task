@@ -18,3 +18,9 @@ DELETE requests need to have name values in the query parameters
 ## Client
 
 By running `client/main.go` these commands can be run: get-age, get-app, cr-user, cr-app, del-user, del-app.
+
+## TODO
+
+[] Add more tests
+[] Make writing to disk more robust
+[] Improve server logging
